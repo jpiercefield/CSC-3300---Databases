@@ -1,0 +1,750 @@
+James Logan Piercefield
+CSC 3300
+Project 2
+
+1. SELECT DISTINCT title AS Titles
+   
+FROM titles;
+
+2. SELECT hire_date 
+   FROM employees 
+   WHERE emp_no=10010;
+
+3. SELECT DATEDIFF((SELECT to_date 
+                 
+                    FROM dept_emp 
+				 
+                    WHERE emp_no=10010 
+                 
+                    AND dept_no="d004"), 
+				
+                   (SELECT from_date 
+                 
+                    FROM dept_emp 
+                 
+                    WHERE emp_no=10010 
+                 
+                    AND dept_no="d004"));
+
+4. SELECT DATEDIFF(CURDATE(), (SELECT from_date 
+                               FROM dept_emp 
+                               WHERE emp_no=10010 
+                               AND dept_no="d006");
+
+5. SELECT MIN(hire_date) FROM employees;
+
+ - My assumption is that the first day the company started operating was 
+   the day the first employee was hired.
+
+6.
+SELECT
+ d.*,
+ DATEDIFF(
+	case when to_date = '9999-01-01' then current_date else to_date end,
+    from_date) as how_long
+FROM dept_emp d
+WHERE
+datediff(
+	case when to_date = '9999-01-01' then current_date else to_date end,
+    from_date) = (SELECT MAX(datediff(
+		         case when to_date = '9999-01-01' 
+                         then current_date 
+                         else to_date end,
+                  from_date))
+	                    FROM dept_emp
+); 
+
+- If the the to_date is eqaul to 9999-01-01 use the current date other wise use the original to_date.
+  Use the date difference on the equation
+
+7. SELECT count(DISTINCT emp_no) 
+   FROM dept_emp 
+   WHERE to_date >= CURDATE();
+
+8.****(Assuming we're counting all past/present employees and their salaries)
+
+   SELECT emp_no, MAX(salary) as HighestSalaryToLowest
+
+   FROM salaries
+   
+GROUP BY emp_no
+   
+ORDER BY HighestSalaryToLowest DESC
+
+9. SELECT dept_no, dept_name 
+   
+FROM departments
+   
+GROUP BY dept_no
+
+10. SELECT count(dept_no) 
+    FROM departments;
+
+11. SELECT dept_no
+	
+       , ( coalesce(sum(gender = 'F'), 0)/count(*) ) * 100
+
+    FROM employees
+
+    JOIN dept_emp ON employees.emp_no=dept_emp.emp_no
+    
+GROUP BY dept_no
+
+12. SELECT dept_no, ( coalesce(sum(gender = 'F' AND to_date='9999-01-01'), 0)/sum(to_date='9999/01/01') ) * 100
+
+    FROM employees
+    
+JOIN dept_emp ON employees.emp_no=dept_emp.emp_no
+    GROUP BY dept_no
+
+13. SELECT title, COUNT(title)
+    
+FROM titles
+
+    JOIN employees ON titles.emp_no=employees.emp_no 
+    WHERE hire_date = from_date
+
+    GROUP BY title
+    
+ORDER BY count(title) DESC;
+
+14. SELECT title, COUNT(title) as Amount
+    
+FROM titles t1
+    
+WHERE to_date = (
+	
+               SELECT MAX(to_date)
+    
+               FROM titles t2
+    
+               WHERE t1.emp_no = t2.emp_no 
+               AND
+ case when to_date > CURDATE()
+        
+               then NULL else to_date end
+
+    ) 
+    
+GROUP BY title
+    
+ORDER BY Amount DESC
+
+--- First, I found the maximum to_date that each employee had. If this to_date is 
+    greater than the current date, then the employee is still employed. So we're
+    not going to count those, thus setting it to NULL. Then we take the maximum
+    to_date and simply count the numbers corresponding to the titles.
+
+15.  SELECT emp_no, first_name, birth_date 
+
+     FROM employees 
+     
+WHERE birth_date = (SELECT MIN(birth_date) 
+                         FROM employees);
+
+16. SELECT s.emp_no
+    
+FROM salaries s, dept_manager d
+    
+WHERE s.emp_no = d.emp_no
+    
+AND (SELECT salary 
+     
+         FROM salaries
+     
+         WHERE from_date = d.from_date
+     
+         AND emp_no = d.emp_no) <=
+	
+        (SELECT salary
+	 
+         FROM salaries
+     
+         WHERE from_date = d.to_date
+     
+         AND emp_no = d.emp_no)
+
+17. SELECT emp_no, DATEDIFF(hire_date, birth_date) 
+
+    FROM employees
+
+    WHERE DATEDIFF(hire_date, birth_date) = (SELECT MIN(DATEDIFF(hire_date, birth_date)) 
+                                             FROM employees)
+
+18. SELECT dept_manager.emp_no, MIN(DATEDIFF(dept_manager.from_date, birth_date))
+ as DaysOld
+    FROM dept_manager
+    
+JOIN employees ON employees.emp_no=dept_manager.emp_no
+    
+WHERE DATEDIFF(dept_manager.from_date, birth_date) = (SELECT MIN(DATEDIFF(dept_manager.from_date, birth_date)))
+
+19. SELECT dept_manager.emp_no, MAX(DATEDIFF(dept_manager.from_date, birth_date))
+    
+FROM dept_manager
+
+    JOIN employees ON employees.emp_no=dept_manager.emp_no
+
+    WHERE DATEDIFF(dept_manager.from_date, birth_date) = (SELECT MAX(DATEDIFF(dept_manager.from_date, birth_date)))
+
+
+20. SELECT MIN(salary) 
+    FROM salaries
+ 
+    JOIN employees on salaries.emp_no=employees.emp_no
+ 
+    WHERE employees.hire_date = from_date
+
+21. 
+
+SELECT max(salary), first_name, last_name, birth_date 
+
+    FROM salaries 
+    
+JOIN employees ON salaries.emp_no=employees.emp_no 
+
+    WHERE employees.hire_date = from_dateD
+
+22. SELECT departments.dept_no
+
+    FROM departments
+
+    JOIN dept_emp ON dept_emp.dept_no=departments.dept_no
+
+    HAVING count(to_date='9999-01-01') = 0
+
+23. SELECT departments.dept_no
+
+    FROM departments
+    
+JOIN dept_emp ON dept_emp.dept_no=departments.dept_no
+
+    HAVING count(to_date='9999-01-01') = 0 AND count(to_date > '0001-01-01') > 0
+
+24. SELECT e.emp_no, min(datediff( IF(d.to_date='9999-01-01', CURDATE(), d.to_date), e.hire_date)) as min_time
+
+    FROM dept_emp d, employees e
+
+    WHERE d.emp_no = e.emp_no AND d.to_date = (select max(to_date) from dept_emp)
+
+    ORDER BY min_time
+
+---- Set the to_date to current date if the lastest date of leaving was 9999-01-01. Then, 
+     find the minimum date difference between the to_date and the hire_date for all employees.
+
+25.  SELECT dept_emp.emp_no 
+ 
+     FROM employees
+ 
+     JOIN dept_emp on dept_emp.emp_no=employees.emp_no
+ 
+     WHERE hire_date=from_date AND dept_no=NULL
+
+
+26. SELECT dept_no as 'Department', 
+    
+title as 'Title',
+    
+count(dept_emp.emp_no) as 'Total'
+    
+FROM titles
+    
+JOIN dept_emp
+
+    ON dept_emp.emp_no = titles.emp_no
+    
+GROUP BY dept_no, title
+
+27. SELECT first_name, count(first_name) as nameCount
+    
+FROM employees
+    
+WHERE gender='F'
+    
+GROUP BY first_name
+
+    HAVING count(first_name) = (SELECT count(first_name)
+                                FROM employees 
+							
+                                WHERE gender = 'F'
+                            
+                                GROUP BY first_name
+                            
+                                ORDER BY count(first_name) DESC
+                            
+                                LIMIT 1)
+
+28. SELECT last_name, count(last_name) as nameCount
+    
+FROM employees
+    
+GROUP BY last_name
+
+    HAVING count(last_name) = (SELECT count(last_name)
+                                FROM employees 
+							                         
+                                GROUP BY last_name
+                            
+                                ORDER BY count(last_name) DESC
+                            
+                                LIMIT 1)
+
+29. SELECT AVG(datediff(second_salary.from_date, e.hire_date))
+
+    FROM employees e INNER JOIN salaries first_salary
+    
+ON e.emp_no = first_salary.emp_no 
+    
+AND first_salary.from_date = e.hire_date 
+    
+INNER JOIN salaries second_salary 
+    ON e.emp_no = second_salary.emp_no 
+    
+AND second_salary.from_date > e.hire_date
+
+    AND second_salary.salary > first_salary.salary
+    
+AND NOT EXISTS (SELECT * FROM salaries s
+				
+                    WHERE s.emp_no = e.emp_no
+                
+                    AND s.from_date > e.hire_date
+                
+                    AND s.from_date < second_salary.from_date
+                
+                    AND s.salary > first_salary.salary);
+
+30. SELECT gender, count(gender) as genderCount
+
+    FROM employees NATURAL JOIN dept_manager
+
+    GROUP BY gender
+    
+HAVING count(gender) = (SELECT count(gender)
+					    
+                            FROM employees NATURAL JOIN dept_manager
+                        
+                            BY gender
+                        
+                            ORDER BY count(gender) DESC
+                        
+                            LIMIT 1)
+
+31. SELECT round(sum(salary)/12, 2) as spentLastMonth
+
+    FROM dept_emp NATURAL JOIN salaries
+
+    WHERE dept_no = 'd004' and to_date >=  '2016/01/02'
+
+32. SELECT emp_no, GROUP_CONCAT(DISTINCT title ORDER BY to_date ASC SEPARATOR ', ')
+ as CareerPath
+    FROM titles
+
+    GROUP BY emp_no
+
+33. SELECT DATE_FORMAT(hire_date, '%Y') as 'Year',
+    
+DATE_FORMAT(hire_date, '%m') as 'Month',
+
+    COUNT(emp_no) as 'Total'
+    
+FROM employees
+    
+GROUP BY DATE_FORMAT(hire_date, '%Y%m')
+    
+ORDER BY Total DESC
+
+34. SELECT
+    (SELECT round(avg(salary), 2)
+    
+FROM employees
+    
+NATURAL JOIN salaries 
+    
+WHERE employees.emp_no = salaries.emp_no AND gender = 'F'
+
+           AND birth_date <= '1985/03/03') as WomenOver30, 
+   (SELECT round(avg(salary), 2) 
+    
+FROM employees
+    
+NATURAL JOIN salaries 
+    
+WHERE employees.emp_no = salaries.emp_no AND gender = 'M'
+
+           AND birth_date <= '1985/03/03') as MenOver30;
+
+35. SELECT AVG(salary) as AVGProductionSalary
+
+    FROM dept_emp d, salaries s, employees e
+
+    WHERE d.emp_no = s.emp_no AND d.emp_no = e.emp_no AND dept_no = 'd004';
+
+36. SELECT round(salary/12, 2) as EarnedInMay10005
+    
+FROM salaries s, employees e
+
+    WHERE s.emp_no = e.emp_no AND e.emp_no = 10005
+    
+AND s.from_date <= '2009/01/05' 
+    
+AND s.to_date >= '2009/01/06';
+
+37. SELECT title, count(title) as WomenWhoWorkedAsThisTitleLongest
+    
+FROM titles NATURAL JOIN employees
+
+    WHERE titles.emp_no = employees.emp_no 
+AND employees.gender = 'F'
+    
+GROUP BY titles.title
+
+    HAVING max(datediff(titles.from_date, titles.to_date))
+    
+ORDER BY WomenWhoWorkedAsThisTitleLongest DESC limit 0,1
+
+38. SELECT
+    (
+SELECT round(avg(salary), 2) 
+
+     FROM dept_manager d, salaries s
+     
+WHERE d.emp_no=s.emp_no 
+
+     AND d.from_date=s.from_date 
+
+     AND s.to_date > '2016/03/03' 
+     
+AND dept_no = 'd005') as CurrentManagerDevelopmentSalary, 
+    
+(SELECT round(avg(salary), 2) 
+     
+FROM dept_emp d, salaries s
+
+     WHERE d.emp_no=s.emp_no 
+     
+AND d.from_date=s.from_date 
+
+     AND s.to_date > '2016/03/03' 
+
+     AND dept_no = 'd005') as CurrentEmployeeDevelopmentSalary;
+
+39. SELECT
+    (
+SELECT round(avg(datediff(curdate(), birth_date))/365, 2) 
+     
+FROM dept_manager d, salaries s, employees e
+     
+WHERE d.emp_no=s.emp_no 
+
+     AND d.emp_no=e.emp_no
+
+     AND d.from_date=s.from_date 
+
+     AND s.to_date > '2016/03/03') as AVGCurrentManagerAge, 
+
+    (SELECT round(avg(datediff(curdate(), birth_date))/365, 2) 
+     
+FROM dept_emp d, salaries s, employees e
+     
+WHERE d.emp_no=s.emp_no 
+AND d.emp_no=e.emp_no
+     
+AND d.from_date=s.from_date 
+     
+AND s.to_date > '2016/03/03') as AVGCurrentEmployeeAge;
+
+40. SELECT COUNT(DISTINCT e.emp_no)
+    
+FROM employees e, employees e2
+    
+WHERE e.first_name = e2.last_name
+
+    AND e.emp_no <> e2.emp_no
+
+41. SELECT count(DISTINCT emp_no)
+    
+FROM employees
+    
+WHERE last_name LIKE ('%ski');
+
+42. SELECT count(DISTINCT emp_no)
+    
+FROM employees
+    
+WHERE last_name LIKE ('Mc%');
+
+43. SELECT first_name, count(first_name) as MostCommonNameGivenToGirlsBornIn2009
+
+    FROM employees
+
+    WHERE gender='F' AND birth_date >= '2009/01/01'
+    AND birth_date <= '2009/12/31'
+
+    GROUP BY first_name
+    
+ORDER BY count(first_name) DESC
+
+
+44. SELECT dept_no, AVG(datediff(
+								 
+                                 case when to_date = '9999-01-01' 
+                                 then current_date else to_date end,
+                                 
+                                 from_date)) as avgDaysEmployeesWorkInThisDept
+
+    FROM dept_emp d, employees e
+    
+WHERE d.emp_no = e.emp_no
+
+    GROUP BY d.dept_no
+    
+ORDER BY avgDaysEmployeesWorkInThisDept DESC
+
+45. SELECT max((s1.salary - s2.salary) * -1) as highestRaiseGiven
+
+    FROM salaries s1, salaries s2
+
+    WHERE s1.emp_no = s2.emp_no 
+
+    AND s1.to_date = s2.from_date
+
+
+46. *******READ - So I couldn't tell what the question was asking exactly, in 
+                  regards to whether or not these titles are from when managers
+                  were managers or throughout their whole job history. Thus,
+                  I have 2 seperate answers depending what the question was
+                  actually asking. (The first answer is the managers title's &
+                  emp_no that don't have 'Manager' in them from their whole job
+                  history. The second answer is the one where the from_date of the
+                  managers is equal to the from_date of title, this would be the 
+                  specific title at the time of being manager.)
+    (A)
+
+    SELECT t.emp_no, title
+
+    FROM titles t, dept_manager d
+
+    WHERE t.emp_no = d.emp_no 
+    AND title NOT LIKE '%Manager%';
+
+    (B)
+
+    SELECT t.emp_no, title
+
+    FROM titles t, dept_manager d
+
+    WHERE t.emp_no = d.emp_no 
+
+    AND d.from_date = t.from_date
+
+    AND title NOT LIKE '%Manager%';
+
+47. SELECT DISTINCT t.title, d.dept_no
+
+    FROM dept_emp d, titles t
+
+    WHERE d.emp_no = t.emp_no
+
+    AND d.from_date = t.from_date
+
+    ORDER BY dept_no
+
+48. SELECT emp_no
+    
+FROM dept_emp
+
+    WHERE to_date <> LAST_DAY(to_date)
+
+49. ******* ---- (Sorry I got a bit creative)
+
+    use employees;
+    
+DELIMITER $
+
+
+    
+DROP FUNCTION IF EXISTS myLoop$
+    
+CREATE FUNCTION myLoop()
+    
+
+RETURNS INT
+
+    BEGIN 
+    
+DECLARE startYear INT;
+    
+DECLARE endYear INT;
+    
+DECLARE total INT;
+    
+DECLARE temp INT;
+    
+DECLARE finalYear INT;
+   
+       SET startYear = (SELECT MIN(YEAR(hire_date)) FROM employees);
+   
+       SET endYear = 2016;
+   
+       SET total = 0;
+   
+       SET finalYear = 0;
+   
+   
+       test_loop : LOOP
+     
+         IF (startYear > endYear) THEN
+	    
+            LEAVE test_loop;
+     
+         END IF;
+   
+     
+         SET temp = (SELECT count(DISTINCT emp_no)
+			     
+                     FROM dept_emp
+			     
+                     WHERE startYear >= YEAR(from_date)
+			     
+                     AND startYear <= YEAR(to_date));
+	 
+         IF (temp > total) THEN 
+       
+            SET total = temp;
+       
+            SET finalYear = startYear;
+	 
+         END IF;
+     
+         SET startYear = startYear +1;
+     
+   
+       END LOOP;
+   
+       RETURN finalYear;
+
+    END$
+
+    DELIMITER ;
+
+
+    SELECT myLoop() as highestEmploymentRateYear;
+
+50. *** (The question states, "started working in 'another' department".
+         So, I'm assuming that the employee has changed departments at
+         least once before.)
+
+    SELECT title, COUNT(t.title) as amountOfEmployeesHavingThisTitleDirectlyAfterTransferringDepts 
+
+    FROM titles t, dept_emp d1, dept_emp d2
+    
+WHERE t.emp_no = d1.emp_no
+
+    AND d1.emp_no = d2.emp_no
+
+    AND d1.dept_no <> d2.dept_no
+    
+AND d2.from_date >= d1.to_date
+
+    AND t.from_date = d2.from_date
+    
+GROUP BY title
+
+    ORDER BY amountOfEmployeesHavingThisTitleDirectlyAfterTransferringDepts DESC
+
+51. SELECT title, COUNT(t.title)
+
+    as numberOfManagersWithThisTitleRightBeforeManger
+
+    FROM titles t, dept_manager d
+
+    WHERE t.emp_no = d.emp_no
+
+    AND t.to_date = d.from_date
+
+    GROUP BY title
+    
+ORDER BY numberOfManagersWithThisTitleRightBeforeManger DESC
+                  
+52. SELECT COUNT(*) as employeesWithUniqueLastName
+    
+FROM (SELECT COUNT(last_name) FROM employees 
+                              
+                                  GROUP BY last_name
+							  
+                                  HAVING count(*) > 1) as test
+
+53. **** ---- (Assuming they're a manager at the same time of having staff title)
+
+    SELECT d.emp_no as EmpNoOfManagersWithStaffTitleAtSameTime
+
+    FROM dept_manager d, titles t
+    WHERE d.emp_no = t.emp_no
+
+    AND t.from_date = d.from_date
+
+    AND t.title = "Staff"
+
+54. SELECT count(d.emp_no) 
+    
+FROM dept_manager d, employees e
+    
+WHERE d.emp_no = e.emp_no
+
+    AND d.from_date = e.hire_date
+
+55. SELECT e1.emp_no, max(datediff(e2.from_date, e1.to_date)) as DaysGone
+
+    FROM titles e1, titles e2, titles e3
+    
+WHERE e1.emp_no = e2.emp_no
+
+    AND e2.emp_no = e3.emp_no
+
+    AND e1.to_date < e2.from_date
+    
+AND e2.from_date <= e3.from_date
+
+    GROUP BY emp_no
+
+    ORDER BY DaysGone DESC
+
+56. SELECT DISTINCT d1.emp_no 
+    
+FROM dept_manager d1, dept_manager d2
+
+    WHERE d1.emp_no = d2.emp_no
+    
+AND d1.dept_no <> d2.dept_no
+
+57. SELECT min(datediff(to_date, from_date)) as Days
+    
+FROM dept_manager
+     
+
+58. SELECT e.emp_no as EmployeesWhoHaveNotBeenManagers
+    
+FROM employees e
+    
+LEFT OUTER JOIN dept_manager d 
+    
+ON e.emp_no = d.emp_no
+    
+WHERE d.emp_no is NULL
+
+59. SELECT DISTINCT title as TitlesCurrentlyHeld
+
+    FROM titles 
+
+    WHERE to_date >= curdate()
+
+60. SELECT emp_no, hire_date as hireDateOfMostRecentEmployees
+    
+FROM employees 
+    
+GROUP BY emp_no
+    
+ORDER BY hire_date DESC
+
+
